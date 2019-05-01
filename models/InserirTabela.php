@@ -7,20 +7,15 @@
 
     $nomeBanco = $_POST['nomeBanco'];
     $nomeTabela = $_POST['nomeTabela'];
+    $csvTable = $_POST['csv'];
 
-    // Checando se foi passado o arquivo corretamente
-    if(!empty($_FILES['arquivo']['tmp_name'])) {
-        $arquivo = new DomDocument();
+    $filename = "../csv/".time().".csv";
+    $myfile = fopen($filename, "w");
+    fwrite($myfile, $csvTable);
+    fclose($myfile);
 
-        // Transformando a variavel $arquivo em um documento légivel XML
-        $arquivo->load($_FILES['arquivo']['tmp_name']);
-
-        // Buscando somente as Rows do documento
-        $linhas = $arquivo->getElementsByTagName('Row');
-
+if($csvTable!=''){
         $link = mysqli_connect("localhost", "root", "root");
-
-
         // Criando Banco
         $teste = mysqli_query($link, "CREATE DATABASE `$nomeBanco` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;");
 
@@ -33,16 +28,11 @@
         $objConexao->executarComandoSQL('SET character_set_client=utf8');
         $objConexao->executarComandoSQL('SET character_set_results=utf8');
 
-        // Vetor que recebe nome dos campos
-        $campos = [];
 
-        // Preenchendo vetor com os nomes
-        for($i = 0; $i < 10; $i++) {
-            if(isset($linhas[0]->getElementsByTagName('Data')->item($i)->nodeValue)) {
-                $item = $linhas[0]->getElementsByTagName('Data')->item($i)->nodeValue;
-                array_push($campos, $item);
-            }
-        }
+        $fn = fopen($filename,"r");
+        $header = fgets($fn);
+        fclose($fn);
+        $campos = explode (",",$header);
 
         $numCampos = sizeof($campos);
         $ultimoCampo = sizeof($campos) - 1;
@@ -51,34 +41,28 @@
         $query = "CREATE TABLE `$nomeTabela` ( ";
 
         for($i = 0; $i < $numCampos; $i++) {
-            if ($i != $ultimoCampo) {
-                $query = $query . " $campos[$i] varchar(100), ";
+            if($campos[$i]!=''&&$campos[$i]!=null&&$campos[$i]!=" "&&$campos[$i]!="/n"){
+                if ($i == 0){
+                    $query = $query . " $campos[$i] varchar(100) ";
+                }
+                else if ($i != $ultimoCampo) {
+                    $query = $query . ", $campos[$i] varchar(100) ";
+                }
+                else {
+                    $query = $query . ", $campos[$i] varchar(100) ) CHARACTER SET utf8 COLLATE utf8_general_ci; ";
+                }
             }
-            else {
-                $query = $query . " $campos[$i] varchar(100) ) CHARACTER SET utf8 COLLATE utf8_general_ci; ";
+            else{
+                $query = $query . ") CHARACTER SET utf8 COLLATE utf8_general_ci; ";
+                break;
             }
         }
 
         $objConexao->executarComandoSQL($query);
-
-
-        // Criando query que insere itens
-        for($i = 1; $i < sizeof($linhas); $i++) {
-
-                $queryInsert = "INSERT INTO $nomeTabela VALUES ( ";
-
-                for($x = 0; $x < $numCampos; $x++) {
-                    if ($x != $ultimoCampo) {
-                        $valor = $linhas[$i]->getElementsByTagName('Data')->item($x)->nodeValue;
-                        $queryInsert = $queryInsert . " ' $valor ' , ";
-                    }
-                    else {
-                        $valor = $linhas[$i]->getElementsByTagName('Data')->item($x)->nodeValue;
-                        $queryInsert = $queryInsert . " ' $valor ' ) ";
-                    }
-                }        
-                $objConexao->executarComandoSQL($queryInsert);
-        }
     }
-   
+
+
+    $query2 = "LOAD DATA LOCAL INFILE '".__DIR__."/".$filename."' INTO TABLE `$nomeTabela` FIELDS TERMINATED BY ',' IGNORE 1 LINES";
+
+    $objConexao->executarComandoSQL($query2);   
 ?>

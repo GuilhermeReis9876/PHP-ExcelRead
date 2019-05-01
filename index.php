@@ -62,8 +62,11 @@
     <script src="https://unpkg.com/popper.js@1.12.6/dist/umd/popper.js" integrity="sha384-fA23ZRQ3G/J53mElWqVJEGJzU0sTs+SvzG8fXVWP+kJQ1lwFAOkcUOysnlKJC33U" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/bootstrap-material-design@4.1.1/dist/js/bootstrap-material-design.js" integrity="sha384-CauSuKpEqAFajSpkdjv3z9t8E7RlpJ1UP0lKM/+NdtSarroVKu069AlsRPKkFBz9" crossorigin="anonymous"></script>
     <script>$(document).ready(function() { $('body').bootstrapMaterialDesign(); });</script>
-
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    
     <script>
+    let X = XLSX;
+    let csvTable = '';
         $(document).ready(function(){
             $('#btn-enviar').click(function(e){
                 e.preventDefault()  
@@ -76,7 +79,11 @@
                 $('#form-excel').ajaxForm({
                     url: 'models/InserirTabela.php',
                     type: 'POST',
+                    data: {
+                        'csv': csvTable
+                    },
                     success: function(data) {
+                        console.log(data);
                         $('#btn-enviar').attr('disabled', false);
                         $('#btn-enviar').text('ENVIAR');
                         $('#ipt-banco').val('');
@@ -86,7 +93,7 @@
                             $('#loading').css('display', 'none')
                             $('#loading-teste').text('Enviando...')
                         }, 3000);
-
+                
                     },
                     error: function(err) {
                         alert('deu ruim')
@@ -95,9 +102,27 @@
                 }).submit();
             })
         })
-    </script>
 
-    <script>
+    function to_json(workbook) {
+		var result = {};
+		workbook.SheetNames.forEach(function(sheetName) {
+			var roa = X.utils.sheet_to_json(workbook.Sheets[sheetName], {header:0});
+			if(roa.length) result[sheetName] = roa;
+		});
+		return JSON.stringify(result, 2, 2);
+	};
+
+    function to_csv(workbook) {
+		var result = [];
+		workbook.SheetNames.forEach(function(sheetName) {
+			var csv = X.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+			if(csv.length){
+				result.push(csv);
+			}
+		});
+		return result.join("\n");
+	};
+
         arquivo = document.getElementById('ipt-arquivo');
         iptBanco = document.getElementById('ipt-banco');
         iptTabela = document.getElementById('ipt-tabela');
@@ -110,7 +135,7 @@
             $('#btn-enviar').text('ENVIAR');
         }
 
-        arquivo.addEventListener('change', function(){
+        arquivo.addEventListener('change', function(e){
             if(arquivo.files.length === 0 || iptBanco.value == "" || iptTabela.value == "") {
                 $('#btn-enviar').attr('disabled', true);  
                 $('#btn-enviar').text('SELECIONE UM ARQUIVO');
@@ -118,6 +143,17 @@
                 $('#btn-enviar').attr('disabled', false);
                 $('#btn-enviar').text('ENVIAR');
             }
+
+            var files = e.target.files, f = files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var data = new Uint8Array(e.target.result);
+                var workbook = XLSX.read(data, {type: 'array'});
+
+                /* DO SOMETHING WITH workbook HERE */
+                csvTable = to_csv(workbook);
+            };
+            reader.readAsArrayBuffer(f);
         }) 
 
         iptBanco.addEventListener('keyup', function(){
