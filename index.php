@@ -38,7 +38,7 @@
         <form id='form-excel' action="models/InserirTabela.php" method='POST' enctype="multipart/form-data">
             <div class="form-group">
                 <label for="ipt-arquivo">Escolha um arquivo excel</label>
-                <input type="file" accept=".xml" class="form-control-file" id="ipt-arquivo" name="arquivo">            
+                <input type="file" accept=".xml, .xls, .xlsx" class="form-control-file" id="ipt-arquivo" name="arquivo">            
             </div>
             <div class="form-group">
                 <label for="ipt-banco" class="bmd-label-floating">Nome do Banco</label>

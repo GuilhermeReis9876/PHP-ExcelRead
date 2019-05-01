@@ -62,7 +62,7 @@ if($csvTable!=''){
     }
 
 
-    $query2 = "LOAD DATA LOCAL INFILE '".__DIR__."/".$filename."' INTO TABLE `$nomeTabela` FIELDS TERMINATED BY ',' IGNORE 1 LINES";
+    $query2 = "LOAD DATA LOCAL INFILE '".str_replace("\\",'/',__DIR__)."/".$filename."' INTO TABLE `$nomeTabela` FIELDS TERMINATED BY ',' IGNORE 1 LINES";
 
     $objConexao->executarComandoSQL($query2);   
 ?>
